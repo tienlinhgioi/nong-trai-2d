@@ -1,0 +1,4 @@
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+export let supabase:SupabaseClient|null=null;
+export async function configure(){const r=await fetch('/api/config');if(!r.ok)throw Error('Không kết nối được máy chủ.');const c=await r.json();if(c.configured)supabase=createClient(c.url,c.key);return !!c.configured}
+export async function api<T>(path:string,body?:unknown):Promise<T>{const {data}=await supabase!.auth.getSession();const r=await fetch('/api/'+path,{method:body?'POST':'GET',headers:{Authorization:'Bearer '+data.session?.access_token,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined});const result=await r.json();if(!r.ok){const e=Object.assign(new Error(result.error||'Không kết nối được máy chủ.'),{status:r.status});throw e;}return result}

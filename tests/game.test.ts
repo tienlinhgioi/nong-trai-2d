@@ -1,0 +1,10 @@
+import { describe,it,expect } from 'vitest';
+import { applyAction,newFarm,ready,parseAction,canWalk,nearShop } from '../shared/game';
+describe('vòng lặp nông trại',()=>{
+ it('gieo, tưới, lớn khi offline, thu hoạch và bán',()=>{const t=Date.UTC(2026,9,28);let f=newFarm();f=applyAction(f,{kind:'plant',plot:0,crop:'carrot'},t);expect(f.seeds.carrot).toBe(4);expect(ready(f.plots[0],t+999999)).toBe(false);f=applyAction(f,{kind:'water',plot:0},t);expect(()=>applyAction(f,{kind:'harvest',plot:0},t+59999)).toThrow();f=applyAction(f,{kind:'harvest',plot:0},t+60000);expect(f.produce.carrot).toBe(1);f=applyAction(f,{kind:'sell',crop:'carrot',quantity:1});expect(f.coins).toBe(110);expect(f.revenue).toBe(10);expect(f.plots[0].crop).toBeNull()});
+ it('ngăn tiêu tiền âm, bán quá số lượng và nhân đôi thu hoạch',()=>{let f=newFarm();expect(()=>applyAction(f,{kind:'buy',crop:'corn',quantity:11})).toThrow();expect(()=>applyAction(f,{kind:'sell',crop:'corn',quantity:1})).toThrow();expect(()=>applyAction(f,{kind:'harvest',plot:0})).toThrow();expect(f.coins).toBe(100)});
+ it('tưới lại không thay đổi đồng hồ',()=>{let f=applyAction(newFarm(),{kind:'plant',plot:1,crop:'carrot'});f=applyAction(f,{kind:'water',plot:1},1000);expect(()=>applyAction(f,{kind:'water',plot:1},3000)).toThrow();expect(f.plots[1].wateredAt).toBe(new Date(1000).toISOString())},);
+ it('không sửa trạng thái trước khi thao tác thành công',()=>{const f=newFarm();applyAction(f,{kind:'plant',plot:0,crop:'carrot'});expect(f.seeds.carrot).toBe(5);expect(f.plots[0].crop).toBeNull()});
+ it('chặn hành động giả mạo',()=>{for(const a of [{kind:'buy',crop:'carrot',quantity:-1},{kind:'buy',crop:'carrot',quantity:1.1},{kind:'plant',crop:'__proto__',plot:0},{kind:'water',plot:24},null,{kind:'award',coins:99999}])expect(()=>parseAction(a)).toThrow()});
+ it('va chạm nhà, ao và biên; nhận vị trí cửa hàng',()=>{expect(canWalk(2,3)).toBe(false);expect(canWalk(2,10)).toBe(false);expect(canWalk(0,5)).toBe(false);expect(canWalk(10,10)).toBe(true);expect(nearShop(15,6)).toBe(true);expect(nearShop(5,6)).toBe(false)})
+});
