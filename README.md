@@ -86,3 +86,30 @@ Bản đồ, nhà, cây, nhân vật được vẽ bằng Phaser Graphics riêng
 - Migration đã áp dụng vào Supabase mới. Đã chạy truy vấn trên database thật xác nhận retry cùng mã chỉ trừ tiền một lần, dữ liệu thử được rollback.
 - Hàm có quyền cao và biên nhận thao tác nằm trong schema `farm_private`, không expose qua Data API. Các RPC public là SECURITY INVOKER; implementation kiểm tra chủ sở hữu qua `auth.uid()`.
 - Đăng ký/xác nhận email/khôi phục mật khẩu qua email thật cần kiểm tra sau khi cấu hình Redirect URLs và SMTP trên Supabase.
+
+## Chơi trên GitHub Pages
+
+Mã nguồn: https://github.com/tienlinhgioi/nong-trai-2d
+
+URL dự kiến khi Pages triển khai thành công: https://tienlinhgioi.github.io/nong-trai-2d/
+
+```sh
+npm run build:pages
+```
+
+Bản Pages nằm ở `dist/pages/`, dùng đường dẫn asset tương đối nên chạy được dưới `/nong-trai-2d/`. Workflow `.github/workflows/pages.yml` kiểm thử, build và triển khai khi push lên `main`. Trong repository Settings → Pages, chọn GitHub Actions làm nguồn triển khai.
+
+GitHub Pages không chạy backend TypeScript. Riêng bản Pages, frontend gọi trực tiếp RPC Supabase bằng JWT của người chơi; các hàm database vẫn kiểm tra sở hữu, giá, thời gian, số lượng và mã yêu cầu. Backend TypeScript vẫn có sẵn cho bản Worker/Sites. Không cần mở API riêng tư của Sites hay thay đổi quyền RLS để chơi trên Pages.
+
+`public/game-config.json` chỉ chứa URL và **publishable key** dành cho trình duyệt, có thể công khai. Tuyệt đối không đặt service-role key tại đây. Bản chơi thử hoạt động ngay cả khi chưa đăng nhập.
+
+Để xác nhận email và khôi phục mật khẩu trên Pages, thêm **đúng URL có đường dẫn repo và dấu `/` cuối** `https://tienlinhgioi.github.io/nong-trai-2d/` vào Supabase Authentication → URL Configuration → Redirect URLs. Ứng dụng giữ đường dẫn này khi tạo liên kết email.
+
+Kiểm thử bản Pages dưới đường dẫn con:
+
+```sh
+# Terminal 1, sau npm run build:pages
+python3 -m http.server 8000 --bind 127.0.0.1 --directory dist
+# Terminal 2; cần Chromium tại /usr/bin/chromium hoặc sửa playwright.config.ts
+PAGES_E2E=1 npm run test:e2e
+```

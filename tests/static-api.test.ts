@@ -1,0 +1,12 @@
+import { describe,it,expect,vi } from 'vitest';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { staticApi } from '../src/static-api';
+function fake(error:unknown=null,status=200){const rpc=vi.fn().mockResolvedValue({data:{coins:100},error,status});const getUser=vi.fn().mockResolvedValue({data:{user:{id:'authenticated-owner',user_metadata:{name:'Bé Nông'}}},error:null});return {rpc,getUser,client:{auth:{getUser},rpc} as unknown as SupabaseClient}}
+describe('GitHub Pages Supabase gateway',()=>{
+ it('lấy chủ nông trại từ tài khoản đã xác thực',async()=>{const f=fake();expect(await staticApi(f.client,'farm')).toEqual({coins:100});expect(f.rpc).toHaveBeenCalledWith('ensure_farm',{p_user:'authenticated-owner',p_name:'Bé Nông'})});
+ it('giữ mã yêu cầu khi retry và không tin ID chủ từ input',async()=>{const f=fake();const request={requestId:'00000000-0000-4000-8000-000000000001',action:{kind:'buy',crop:'carrot',quantity:1},p_user:'intruder'};await staticApi(f.client,'actions',request);await staticApi(f.client,'actions',request);expect(f.rpc).toHaveBeenCalledTimes(2);expect(f.rpc.mock.calls[0]).toEqual(f.rpc.mock.calls[1]);expect(f.rpc.mock.calls[0][1]).toEqual({p_user:'authenticated-owner',p_request:request.requestId,p_action:request.action})});
+ it('không gọi RPC khi chưa đăng nhập',async()=>{const f=fake();f.getUser.mockResolvedValue({data:{user:null},error:null});await expect(staticApi(f.client,'farm')).rejects.toMatchObject({status:401});expect(f.rpc).not.toHaveBeenCalled()});
+ it('chặn số lượng âm và mã yêu cầu không hợp lệ',async()=>{const f=fake();await expect(staticApi(f.client,'actions',{requestId:'bad',action:{kind:'buy',crop:'carrot',quantity:1}})).rejects.toMatchObject({status:400});await expect(staticApi(f.client,'actions',{requestId:'00000000-0000-4000-8000-000000000001',action:{kind:'buy',crop:'carrot',quantity:-1}})).rejects.toMatchObject({status:400});expect(f.rpc).not.toHaveBeenCalled()});
+ it('chuyển lỗi nghiệp vụ và mất kết nối cho luồng retry',async()=>{const f=fake({code:'P0001',message:'Bạn chưa đủ xu.'},400);await expect(staticApi(f.client,'farm')).rejects.toMatchObject({status:409,message:'Bạn chưa đủ xu.'});const offline=fake({code:'',message:'fetch failed'},0);await expect(staticApi(offline.client,'farm')).rejects.toMatchObject({status:503})});
+ it('bảng xếp hạng dùng RPC đã giới hạn dữ liệu',async()=>{const f=fake();await staticApi(f.client,'leaderboard');expect(f.rpc).toHaveBeenCalledWith('farm_leaderboard')});
+});

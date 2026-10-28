@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import type { Session } from '@supabase/supabase-js';
 import { Game } from './game/Game';
 import type { Bridge } from './game/FarmScene';
-import { api, configure, supabase } from './api';
+import { api, configure, supabase, authRedirectUrl } from './api';
 import { CROPS, crops, newFarm, ready, applyAction, type Action, type Crop, type Farm, type Leader, type Tool, type Direction } from '../shared/game';
 type Panel='shop'|'bag'|'rank'|'help'|'auth'|null;
 const DEMO_KEY='nong-trai-demo-v1';
@@ -35,8 +35,8 @@ export function App(){
  async function openRank(){setPanel('rank');setRankError('');setLeaders([]);if(demo)return;setRankLoading(true);try{setLeaders(await api<Leader[]>('leaderboard'))}catch(e){setRankError((e as Error).message)}finally{setRankLoading(false)}}
  async function authSubmit(e:FormEvent<HTMLFormElement>){e.preventDefault();if(!supabase)return;setAuthBusy(true);setAuthMessage('');const form=new FormData(e.currentTarget),email=String(form.get('email')),password=String(form.get('password'));try{
  if(mode==='recover'){const {error}=await supabase.auth.updateUser({password});if(error)throw error;setAuthMessage('Đã cập nhật mật khẩu.');setMode('login');setPanel(null);history.replaceState(null,'',location.pathname)}
- else if(mode==='forgot'){const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:location.origin});if(error)throw error;setAuthMessage('Nếu tài khoản tồn tại, liên kết đặt lại mật khẩu sẽ được gửi qua email.')}
- else if(mode==='signup'){const {data,error}=await supabase.auth.signUp({email,password,options:{data:{name:String(form.get('name')).trim()},emailRedirectTo:location.origin}});if(error)throw error;if(data.session){setDemo(false);setSession(data.session);setPanel(null)}else setAuthMessage('Hãy kiểm tra email để xác nhận tài khoản, sau đó đăng nhập.')}
+ else if(mode==='forgot'){const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:authRedirectUrl()});if(error)throw error;setAuthMessage('Nếu tài khoản tồn tại, liên kết đặt lại mật khẩu sẽ được gửi qua email.')}
+ else if(mode==='signup'){const {data,error}=await supabase.auth.signUp({email,password,options:{data:{name:String(form.get('name')).trim()},emailRedirectTo:authRedirectUrl()}});if(error)throw error;if(data.session){setDemo(false);setSession(data.session);setPanel(null)}else setAuthMessage('Hãy kiểm tra email để xác nhận tài khoản, sau đó đăng nhập.')}
  else {const {data,error}=await supabase.auth.signInWithPassword({email,password});if(error)throw error;setDemo(false);setSession(data.session);setPanel(null)}
  }catch(e){setAuthMessage((e as Error).message)}finally{setAuthBusy(false)}}
  const plot=target>=0?farm.plots[target]:null;

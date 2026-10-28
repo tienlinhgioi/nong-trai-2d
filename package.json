@@ -10,7 +10,8 @@
     "test": "vitest run",
     "dev:api": "wrangler dev",
     "deploy": "npm run build && wrangler deploy",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "build:pages": "node scripts/build-pages.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.118.0",
