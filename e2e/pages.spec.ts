@@ -9,6 +9,7 @@ test('Pages chạy tại đường dẫn con, có config đăng nhập và chơi
  await expect(page.locator('canvas')).toBeVisible();
  await page.keyboard.down('w');await page.waitForTimeout(180);await page.keyboard.up('w');
  await page.keyboard.press('e');await expect(page.getByRole('status')).toContainText('Đã gieo hạt');
+ await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('nong-trai-demo-v1')||'null')?.seeds.carrot)).toBe(4);
  await page.reload();await page.getByRole('button',{name:'Chơi thử không cần đăng nhập'}).click();
  await expect(page.getByRole('button',{name:'Hạt Cà rốt'})).toContainText('4');
  expect(apiCalls).toEqual([]);expect(failed).toEqual([]);
