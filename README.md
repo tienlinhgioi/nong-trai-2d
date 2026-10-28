@@ -78,3 +78,11 @@ Không commit `.dev.vars`, `.env`, token hoặc secret. Với production có lư
 ## Tài nguyên
 
 Bản đồ, nhà, cây, nhân vật được vẽ bằng Phaser Graphics riêng cho dự án. Không sử dụng sprite bên thứ ba. Font Be Vietnam Pro và Nunito qua Google Fonts (SIL Open Font License); có sans-serif dự phòng. Các biểu tượng dụng cụ dùng emoji hệ thống.
+
+## Kiểm chứng phiên triển khai
+
+- 16 kiểm thử logic, API và PostgreSQL đã qua.
+- 2 kiểm thử trình duyệt Chromium đã qua: desktop gieo/tưới/lưu sau reload; mobile điều khiển và bố cục.
+- Migration đã áp dụng vào Supabase mới. Đã chạy truy vấn trên database thật xác nhận retry cùng mã chỉ trừ tiền một lần, dữ liệu thử được rollback.
+- Hàm có quyền cao và biên nhận thao tác nằm trong schema `farm_private`, không expose qua Data API. Các RPC public là SECURITY INVOKER; implementation kiểm tra chủ sở hữu qua `auth.uid()`.
+- Đăng ký/xác nhận email/khôi phục mật khẩu qua email thật cần kiểm tra sau khi cấu hình Redirect URLs và SMTP trên Supabase.

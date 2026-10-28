@@ -11,13 +11,14 @@ export function App(){
  const [farm,setFarm]=useState<Farm>(newFarm),[demo,setDemo]=useState(false),[session,setSession]=useState<Session|null>(null),[configured,setConfigured]=useState<boolean|null>(null),[configError,setConfigError]=useState('');
  const [panel,setPanel]=useState<Panel>('auth'),[tool,setTool]=useState<Tool>('carrot'),[target,setTarget]=useState(-1),[atShop,setAtShop]=useState(false),[busy,setBusy]=useState(false),[loaded,setLoaded]=useState(false),[loadError,setLoadError]=useState(''),[toast,setToast]=useState(''),[leaders,setLeaders]=useState<Leader[]>([]),[rankError,setRankError]=useState(''),[rankLoading,setRankLoading]=useState(false),[retry,setRetry]=useState(false);
  const [clock,setClock]=useState(Date.now()),[mode,setMode]=useState<'login'|'signup'|'forgot'|'recover'>('login'),[authMessage,setAuthMessage]=useState(''),[authBusy,setAuthBusy]=useState(false);
+ const recovering=useRef(false);
  const pending=useRef<{action:Action;requestId:string}|null>(null),mutating=useRef(false);
  const bridge=useRef<Bridge>({farm,move:null,interact:false,blocked:true,onTarget:()=>{},onInteract:()=>{}}).current;
  useEffect(()=>{const i=setInterval(()=>setClock(Date.now()),1000);return()=>clearInterval(i)},[]);
  useEffect(()=>{if(!toast)return;const i=setTimeout(()=>setToast(''),5000);return()=>clearTimeout(i)},[toast]);
  useEffect(()=>{let active=true;let unsubscribe:(()=>void)|undefined;configure().then(async ok=>{if(!active)return;setConfigured(ok);if(!ok)return;
-  const {data}=supabase!.auth.onAuthStateChange((event,s)=>{if(!active)return;setSession(s);if(event==='PASSWORD_RECOVERY'){setMode('recover');setPanel('auth')}else if(event==='SIGNED_IN')setPanel(p=>p==='auth'?null:p)});unsubscribe=()=>data.subscription.unsubscribe();
-  const {data:initial}=await supabase!.auth.getSession();if(active){setSession(initial.session);if(initial.session&&!window.location.hash.includes('type=recovery'))setPanel(null)}
+  const {data}=supabase!.auth.onAuthStateChange((event,s)=>{if(!active)return;setSession(s);if(event==='SIGNED_OUT'){setLoaded(false);setFarm(newFarm());setPanel('auth');pending.current=null;setRetry(false)}if(event==='PASSWORD_RECOVERY'){recovering.current=true;setMode('recover');setPanel('auth')}else if(event==='SIGNED_IN')setPanel(p=>p==='auth'?null:p)});unsubscribe=()=>data.subscription.unsubscribe();
+  const {data:initial}=await supabase!.auth.getSession();if(active){setSession(initial.session);if(initial.session&&!recovering.current&&!window.location.hash.includes('type=recovery'))setPanel(null)}
  }).catch(()=>{if(active){setConfigured(false);setConfigError('Không kết nối được máy chủ. Hãy tải lại trang hoặc chơi thử.')}});return()=>{active=false;unsubscribe?.()}},[]);
  const load=useCallback(async()=>{setLoadError('');setLoaded(false);try{setFarm(await api<Farm>('farm'));setLoaded(true)}catch(e){setLoadError((e as Error).message)}},[]);
  useEffect(()=>{if(session&&!demo)void load()},[session?.user.id,demo,load]);

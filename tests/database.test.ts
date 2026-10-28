@@ -1,10 +1,10 @@
 import { PGlite } from '@electric-sql/pglite';
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 const db=new PGlite();const owner='00000000-0000-4000-8000-000000000001',other='00000000-0000-4000-8000-000000000002';
 let id=0;const req=()=>`00000000-0000-4000-8000-${String(++id).padStart(12,'0')}`;
 async function action(a:unknown,key=req()){const r=await db.query<{state:any}>('select public.perform_farm_action($1,$2,$3::jsonb) as state',[owner,key,JSON.stringify(a)]);return r.rows[0].state}
-beforeAll(async()=>{await db.exec(`create role anon; create role authenticated; create role service_role; create schema auth; create table auth.users(id uuid primary key); create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$; grant usage on schema auth to authenticated; grant execute on function auth.uid() to authenticated; insert into auth.users values ('${owner}'),('${other}');`);await db.exec(readFileSync('supabase/migrations/20261028112338_farm.sql','utf8'));await db.query("select set_config('request.jwt.claim.sub',$1,false)",[owner]);await db.query('select public.ensure_farm($1,$2)',[owner,'Test farmer']);},30000);
+beforeAll(async()=>{await db.exec(`create role anon; create role authenticated; create role service_role; create schema auth; create table auth.users(id uuid primary key); create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$; grant usage on schema auth to authenticated; grant execute on function auth.uid() to authenticated; insert into auth.users values ('${owner}'),('${other}');`);for(const file of readdirSync('supabase/migrations').sort()) await db.exec(readFileSync('supabase/migrations/'+file,'utf8'));await db.query("select set_config('request.jwt.claim.sub',$1,false)",[owner]);await db.query('select public.ensure_farm($1,$2)',[owner,'Test farmer']);},30000);
 afterAll(async()=>{await db.close()});
 describe.sequential('migration PostgreSQL và quyền truy cập',()=>{
  it('khởi tạo đúng 24 ô, 100 xu và 5 hạt',async()=>{const r=await db.query<{state:any}>('select public.ensure_farm($1,$2) state',[owner,'Ignore']);expect(r.rows[0].state.coins).toBe(100);expect(r.rows[0].state.plots).toHaveLength(24)});

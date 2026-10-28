@@ -29,6 +29,7 @@ export async function api(request:Request,env:Env):Promise<Response>{
   if(!request.headers.get('Content-Type')?.includes('application/json'))return json({error:'Yêu cầu phải là JSON.'},415);
   const raw=await request.text();if(raw.length>2048)return json({error:'Yêu cầu quá lớn.'},413);
   let body;try{body=JSON.parse(raw)}catch{return json({error:'JSON không hợp lệ.'},400)}
+  if(!body||typeof body!=='object'||Array.isArray(body))return json({error:'Yêu cầu không hợp lệ.'},400);
   let action;try{action=parseAction(body.action)}catch(e){return json({error:(e as Error).message},400)}
   if(typeof body.requestId!=='string'||! /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.requestId))return json({error:'Mã thao tác không hợp lệ.'},400);
   const {data,error}=await db.rpc('perform_farm_action',{p_user:user.id,p_request:body.requestId,p_action:action});
